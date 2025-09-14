@@ -27,7 +27,7 @@
     <p class="muted">A minimal single-file example. Replace the <code>firebaseConfig</code> object with your project values and enable Email/Password sign-in in the Firebase console.</p>
 
     <!-- Sign up form -->
-    <section>
+    <section id="signup">
       <h2 style="font-size:16px;margin-top:6px">Create account</h2>
       <form id="signup-form">
         <input id="signup-email" type="email" placeholder="Email" required />
@@ -43,7 +43,7 @@
     <hr />
 
     <!-- Sign in form -->
-    <section>
+    <section id="signin">
       <h2 style="font-size:16px;margin-top:6px">Sign in</h2>
       <form id="signin-form">
         <input id="signin-email" type="email" placeholder="Email" required />
@@ -199,10 +199,14 @@
       if(user){
         const isAnon = user.isAnonymous;
         userArea.innerHTML = `\n          <div class="user-box">\n            <div>\n              <div><strong>UID:</strong> ${user.uid}</div>\n              <div><strong>Email:</strong> ${user.email ?? '(none — anonymous)'} </div>\n              <div class="muted">${isAnon ? 'Signed in anonymously' : 'Signed in with email'}</div>\n            </div>\n            <div style="text-align:right">\n              <div class="muted">Provider: ${user.providerData.length ? user.providerData.map(p=>p.providerId).join(', ') : 'none'}</div>\n            </div>\n          </div>\n        `;
+        document.getElementById("signup-form").style.display = "none";
+        document.getElementById("signin-form").style.display = "none";
         signoutBtn.style.display = 'inline-block';
       } else {
         userArea.innerHTML = '<div class="muted">Not signed in.</div>';
         signoutBtn.style.display = 'none';
+        document.getElementById("signup-form").style.display = "block";
+        document.getElementById("signin-form").style.display = "block";
       }
     });
 
