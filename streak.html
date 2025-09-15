@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Streak Viewer — Month & Scroll</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#7c3aed; --ok:#16a34a; --bad:#1f2937;
+      --cell-size:44px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#e6eef8;background:linear-gradient(180deg,#071027 0%, #071426 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .app{width:980px;max-width:96%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .title{display:flex;gap:12px;align-items:center}
+    h1{font-size:18px;margin:0}
+    .sub{color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#5b21b6);border:none;color:white}
+
+    .calendar-wrap{display:flex;gap:14px;align-items:flex-start}
+    .month-card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border-radius:12px;padding:12px;width:100%;max-width:680px}
+    .month-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .month-title{font-weight:600}
+
+    .grid{display:grid;grid-template-columns:repeat(7, var(--cell-size));gap:8px}
+    .weekday{font-size:12px;color:var(--muted);text-align:center}
+    .day{width:var(--cell-size);height:var(--cell-size);display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,255,255,0.01);cursor:pointer;position:relative;transition:transform .12s ease, box-shadow .12s ease}
+    .day:hover{transform:translateY(-4px)}
+    .day.inactive{opacity:0.22;cursor:default}
+    .day[data-state="done"]{background:linear-gradient(180deg, rgba(124,58,237,0.15), rgba(59,130,246,0.05));box-shadow:0 6px 18px rgba(124,58,237,0.08);}
+    .day .n{font-size:12px}
+    .legend{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px;margin-top:8px}
+    .legend .dot{width:12px;height:12px;border-radius:3px;background:var(--accent)}
+
+    aside{width:260px;min-width:220px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));padding:12px;border-radius:12px}
+    .stat{font-size:28px;font-weight:700}
+    .muted{color:var(--muted);font-size:13px}
+    .month-carousel{display:flex;gap:10px;align-items:center;overflow:hidden;padding:6px}
+    .month-item{min-width:86px;padding:8px;border-radius:10px;text-align:center;cursor:pointer}
+    .month-item.active{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+    .footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media (max-width:880px){.calendar-wrap{flex-direction:column}.month-card{order:2}.panel{order:1;width:100%}}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="title">
+        <div>
+          <h1>Streak Viewer</h1>
+          <div class="sub">View your daily streaks by month — click days to toggle. Data saved to localStorage.</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="todayBtn">Today</button>
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn" id="importBtn">Import</button>
+        <button class="btn primary" id="clearBtn">Clear all</button>
+      </div>
+    </header>
+
+    <div class="calendar-wrap">
+      <div class="month-card" aria-live="polite">
+        <div class="month-header">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn" id="prevMonth">◀</button>
+            <div class="month-title" id="monthTitle">Month</div>
+            <button class="btn" id="nextMonth">▶</button>
+          </div>
+          <div class="muted" id="rangeLabel">Showing</div>
+        </div>
+
+        <div class="grid" id="weekdayRow" style="margin-bottom:6px">
+          <div class="weekday">Sun</div>
+          <div class="weekday">Mon</div>
+          <div class="weekday">Tue</div>
+          <div class="weekday">Wed</div>
+          <div class="weekday">Thu</div>
+          <div class="weekday">Fri</div>
+          <div class="weekday">Sat</div>
+        </div>
+
+        <div class="grid" id="daysGrid" aria-describedby="legend"></div>
+
+        <div class="legend" id="legend"><span class="dot"></span><span>Completed</span><span style="margin-left:14px;color:var(--muted)">Tap a day to toggle</span></div>
+      </div>
+
+      <aside>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <div class="muted">Current streak</div>
+              <div class="stat" id="currentStreak">0</div>
+            </div>
+            <div>
+              <div class="muted">Longest streak</div>
+              <div class="stat" id="longestStreak">0</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:8px">
+            <div class="muted">Month carousel</div>
+            <div class="month-carousel" id="carousel"></div>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:space-between;margin-top:10px">
+            <div class="muted">Total days marked</div>
+            <div id="totalMarked">0</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="panel" style="text-align:center">
+          <div class="muted">Tips</div>
+          <div style="margin-top:8px;color:var(--muted);font-size:13px">Use ◀ ▶ or keyboard ← → to browse months. Click a day to toggle completion. Data stored locally.</div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="footer">Built with ❤️ — Editable single-file demo</div>
+  </div>
+
+  <script>
+    // Simple streak month viewer single-file
+    const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const STORAGE_KEY = 'streakViewer:v1';
+
+    function uidDate(d){
+      const y=d.getFullYear(); const m=(d.getMonth()+1).toString().padStart(2,'0'); const day=d.getDate().toString().padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function loadData(){
+      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}') }catch(e){return {}} }
+    function saveData(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }
+
+    let data = loadData();
+
+    // visual state
+    let viewYear, viewMonth; // monthIndex 0-11
+
+    function setView(y,m){ viewYear=y; viewMonth=m; render(); updateCarousel(); }
+
+    function getMonthInfo(y,m){
+      const first = new Date(y,m,1);
+      const last = new Date(y,m+1,0);
+      return {firstDayIndex:first.getDay(), days:last.getDate()}
+    }
+
+    function getKey(dateStr){ return dateStr }
+    function isDone(dateStr){ return !!data[dateStr] }
+    function toggleDay(dateStr){ if(isDone(dateStr)) delete data[dateStr]; else data[dateStr]=true; saveData(data); render(); updateStats(); }
+
+    function render(){
+      const titleEl = document.getElementById('monthTitle');
+      const rangeLabel = document.getElementById('rangeLabel');
+      const daysGrid = document.getElementById('daysGrid');
+      const {firstDayIndex, days} = getMonthInfo(viewYear, viewMonth);
+      const monName = new Date(viewYear,viewMonth,1).toLocaleString(undefined,{month:'long',year:'numeric'});
+      titleEl.textContent = monName;
+      rangeLabel.textContent = `Viewing ${monName}`;
+
+      daysGrid.innerHTML='';
+
+      // pad before with inert cells
+      for(let i=0;i<firstDayIndex;i++){
+        const el=document.createElement('div'); el.className='day inactive'; el.setAttribute('aria-hidden','true'); daysGrid.appendChild(el);
+      }
+
+      for(let d=1;d<=days;d++){
+        const date = new Date(viewYear,viewMonth,d);
+        const id = uidDate(date);
+        const el = document.createElement('button'); el.className='day'; el.setAttribute('data-date', id);
+        if(isDone(id)) el.setAttribute('data-state','done'); else el.setAttribute('data-state','');
+        el.innerHTML = `<div class="n">${d}</div>`;
+        el.addEventListener('click', ()=>{ toggleDay(id) });
+        // tooltip
+        el.title = id + (isDone(id)?' • completed':'');
+        daysGrid.appendChild(el);
+      }
+
+      updateStats();
+    }
+
+    function updateStats(){
+      // current streak ends today (consecutive days up to today)
+      const today = new Date();
+      let cur=0; let d=new Date(today);
+      while(true){
+        const key = uidDate(d);
+        if(data[key]){ cur++; d.setDate(d.getDate()-1); } else break;
+      }
+      document.getElementById('currentStreak').textContent = cur;
+
+      // longest streak computed across stored dates
+      const keys = Object.keys(data).sort();
+      let longest=0, running=0, prev=null;
+      for(const k of keys){
+        const part = k.split('-').map(Number); const dt = new Date(part[0], part[1]-1, part[2]);
+        if(!prev){ running=1; }
+        else{
+          const diff = (dt - prev)/(1000*60*60*24);
+          if(diff===1) running++; else running=1;
+        }
+        if(running>longest) longest=running;
+        prev = dt;
+      }
+      document.getElementById('longestStreak').textContent = longest;
+
+      document.getElementById('totalMarked').textContent = keys.length;
+
+      // update day titles for accessible tooltip
+      document.querySelectorAll('.day[data-date]').forEach(el=>{
+        const k = el.getAttribute('data-date'); el.title = k + (isDone(k)?' • completed':'');
+        if(isDone(k)) el.setAttribute('data-state','done'); else el.removeAttribute('data-state');
+      });
+    }
+
+    // month carousel — shows previous 12 months quick pick
+    function updateCarousel(){
+      const container = document.getElementById('carousel'); container.innerHTML='';
+      for(let i=0;i<12;i++){
+        const dt = new Date(viewYear, viewMonth - (11-i), 1);
+        const el = document.createElement('div'); el.className='month-item'; el.textContent = dt.toLocaleString(undefined,{month:'short',year:'numeric'});
+        if(dt.getFullYear()===viewYear && dt.getMonth()===viewMonth) el.classList.add('active');
+        el.addEventListener('click', ()=> setView(dt.getFullYear(), dt.getMonth()));
+        container.appendChild(el);
+      }
+    }
+
+    // navigation
+    document.getElementById('prevMonth').addEventListener('click', ()=>{
+      const dt = new Date(viewYear, viewMonth-1, 1); setView(dt.getFullYear(), dt.getMonth());
+    });
+    document.getElementById('nextMonth').addEventListener('click', ()=>{
+      const dt = new Date(viewYear, viewMonth+1, 1); setView(dt.getFullYear(), dt.getMonth());
+    });
+
+    document.getElementById('todayBtn').addEventListener('click', ()=>{
+      const t=new Date(); setView(t.getFullYear(), t.getMonth());
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      if(confirm('Clear ALL streak data from localStorage?')){ data={}; saveData(data); render(); }
+    });
+
+    // Export/Import
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const txt = JSON.stringify(data,null,2);
+      navigator.clipboard?.writeText(txt).then(()=>alert('JSON copied to clipboard'));
+    });
+    document.getElementById('importBtn').addEventListener('click', ()=>{
+      const txt = prompt('Paste exported JSON here');
+      try{ if(!txt) return; const obj = JSON.parse(txt); data = obj; saveData(data); render(); alert('Imported OK'); }catch(e){ alert('Invalid JSON') }
+    });
+
+    // keyboard
+    window.addEventListener('keydown', (e)=>{
+      if(e.key==='ArrowLeft'){ document.getElementById('prevMonth').click(); }
+      if(e.key==='ArrowRight'){ document.getElementById('nextMonth').click(); }
+    });
+
+    // init view to current month
+    (function init(){ const t=new Date(); setView(t.getFullYear(), t.getMonth());
+      // helpful: generate some demo data if empty and first run
+      if(Object.keys(data).length===0){
+        // seed last 20 days randomly for demo but keep user consent minimal — we'll not auto-save; instead show a dialog to seed
+        if(confirm('Seeding demo data for the last 30 days? (Cancel to keep empty)')){
+          const now=new Date(); for(let i=0;i<30;i++){ const d=new Date(now); d.setDate(now.getDate()-i); if(Math.random()>0.45) data[uidDate(d)]=true; }
+          saveData(data); render(); updateStats();
+        }
+      }
+    })();
+
+  </script>
+</body>
+</html>
