@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Streak Viewer — Firebase Sync</title>
+  <title>Streak Viewer — Firebase Sync with Login</title>
   <style>
-    /* same CSS as before */
     :root{ --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#7c3aed; --ok:#16a34a; --bad:#1f2937; --cell-size:44px; }
     *{box-sizing:border-box}
     body{margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#e6eef8;background:linear-gradient(180deg,#071027 0%, #071426 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -38,16 +37,23 @@
     .month-item{min-width:86px;padding:8px;border-radius:10px;text-align:center;cursor:pointer}
     .month-item.active{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
     .footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
-    @media (max-width:880px){.calendar-wrap{flex-direction:column}.month-card{order:2}.panel{order:1;width:100%}}
+    #loginForm{margin-bottom:12px;display:flex;gap:8px;align-items:center}
+    #loginForm input{padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:white}
   </style>
 </head>
 <body>
   <div class="app" id="app">
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit" class="btn primary">Login</button>
+    </form>
+
     <header>
       <div class="title">
         <div>
           <h1>Streak Viewer</h1>
-          <div class="sub">Streaks synced with Firebase — click days to toggle</div>
+          <div class="sub">Streaks synced with Firebase — login required</div>
         </div>
       </div>
       <div class="controls">
@@ -97,21 +103,20 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-    // TODO: replace with your Firebase project config
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
+      apiKey: "AIzaSyAtlpMxWZ75kX_0c_SooL8lzeFXqOhAZgc",
+      authDomain: "streak-eda1a.firebaseapp.com",
+      projectId: "streak-eda1a",
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    const userId = "demoUser"; // in real app, replace with auth uid
-    const streakRef = (dateStr) => doc(db, "streaks", `${userId}_${dateStr}`);
-
-    let cache = {}; // local mirror of streak data
+    let userId = null;
+    let cache = {};
 
     function uidDate(d){
       const y=d.getFullYear(); const m=(d.getMonth()+1).toString().padStart(2,'0'); const day=d.getDate().toString().padStart(2,'0');
@@ -126,6 +131,8 @@
       const first=new Date(y,m,1); const last=new Date(y,m+1,0);
       return {firstDayIndex:first.getDay(), days:last.getDate()}
     }
+
+    function streakRef(dateStr){ return doc(db, "streaks", `${userId}_${dateStr}`); }
 
     async function isDone(dateStr){ if(dateStr in cache) return cache[dateStr];
       const snap = await getDoc(streakRef(dateStr));
@@ -145,6 +152,7 @@
     }
 
     async function render(){
+      if(!userId) return;
       const daysGrid=document.getElementById('daysGrid');
       const {firstDayIndex, days}=getMonthInfo(viewYear, viewMonth);
       const monName=new Date(viewYear,viewMonth,1).toLocaleString(undefined,{month:'long',year:'numeric'});
@@ -179,7 +187,6 @@
         prev=dt;
       }
       document.getElementById('longestStreak').textContent=longest;
-      // current streak
       let cur=0; let t=new Date();
       while(true){ const k=uidDate(t); if(cache[k]){cur++; t.setDate(t.getDate()-1);} else break; }
       document.getElementById('currentStreak').textContent=cur;
@@ -190,7 +197,28 @@
     document.getElementById('todayBtn').addEventListener('click',()=>{const t=new Date(); setView(t.getFullYear(),t.getMonth());});
     document.getElementById('clearBtn').addEventListener('click',async()=>{if(confirm('Clear all streaks?')){for(const k of Object.keys(cache)){if(cache[k]){await deleteDoc(streakRef(k)); cache[k]=false;}} render();}});
 
-    (async function init(){const t=new Date(); setView(t.getFullYear(),t.getMonth());})();
+    // Login form handling
+    document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const email=document.getElementById('email').value;
+      const password=document.getElementById('password').value;
+      try{
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch(err){
+        alert("Login failed: "+err.message);
+      }
+    });
+
+    onAuthStateChanged(auth, (user)=>{
+      if(user){
+        userId=user.uid;
+        const t=new Date(); setView(t.getFullYear(),t.getMonth());
+        document.getElementById('loginForm').style.display='none';
+      } else {
+        userId=null;
+        document.getElementById('loginForm').style.display='flex';
+      }
+    });
   </script>
 </body>
 </html>
