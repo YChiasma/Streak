@@ -39,6 +39,7 @@
     .footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
     #loginForm{margin-bottom:12px;display:flex;gap:8px;align-items:center}
     #loginForm input{padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:white}
+    #logoutBtn{display:none;}
   </style>
 </head>
 <body>
@@ -48,6 +49,7 @@
       <input type="password" id="password" placeholder="Password" required />
       <button type="submit" class="btn primary">Login</button>
     </form>
+    <button class="btn" id="logoutBtn">Logout</button>
 
     <header>
       <div class="title">
@@ -103,7 +105,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAtlpMxWZ75kX_0c_SooL8lzeFXqOhAZgc",
@@ -209,14 +211,24 @@
       }
     });
 
+    document.getElementById('logoutBtn').addEventListener('click', async()=>{
+      try{
+        await signOut(auth);
+      } catch(err){
+        alert("Logout failed: "+err.message);
+      }
+    });
+
     onAuthStateChanged(auth, (user)=>{
       if(user){
         userId=user.uid;
         const t=new Date(); setView(t.getFullYear(),t.getMonth());
         document.getElementById('loginForm').style.display='none';
+        document.getElementById('logoutBtn').style.display='inline-block';
       } else {
         userId=null;
         document.getElementById('loginForm').style.display='flex';
+        document.getElementById('logoutBtn').style.display='none';
       }
     });
   </script>
