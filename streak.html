@@ -103,7 +103,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -126,7 +126,7 @@
 
     let viewYear, viewMonth;
 
-    function setView(y,m){ viewYear=y; viewMonth=m; render(); }
+    function setView(y,m){ viewYear=y; viewMonth=m; loadMonthRange(y,m); }
 
     function getMonthInfo(y,m){
       const first=new Date(y,m,1); const last=new Date(y,m+1,0);
@@ -191,6 +191,23 @@
       let cur=0; let t=new Date();
       while(true){ const k=uidDate(t); if(cache[k]){cur++; t.setDate(t.getDate()-1);} else break; }
       document.getElementById('currentStreak').textContent=cur;
+    }
+
+    async function loadMonthRange(y,m){
+      if(!userId) return;
+      // Range: prev month, current month, next month
+      const start=new Date(y,m-1,1);
+      const end=new Date(y,m+2,0);
+      const streaksCol=collection(db, "streaks");
+      const q=query(streaksCol, where("ts", ">=", start.getTime()), where("ts", "<=", end.getTime()));
+      const snaps=await getDocs(q);
+      snaps.forEach(docSnap=>{
+        if(docSnap.exists()){
+          const id=docSnap.id.split("_")[1];
+          cache[id]=true;
+        }
+      });
+      render();
     }
 
     document.getElementById('prevMonth').addEventListener('click',()=>{const dt=new Date(viewYear,viewMonth-1,1); setView(dt.getFullYear(),dt.getMonth());});
