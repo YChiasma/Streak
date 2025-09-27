@@ -143,7 +143,9 @@
       return {firstDayIndex:first.getDay(), days:last.getDate()}
     }
 
-    function streakRef(dateStr){ return doc(db, "streaks", `${userId}_${dateStr}`); }
+    function streakRef(dateStr) {
+      return doc(db, "users", userId, "streaks", dateStr);
+    }
 
     async function isDone(dateStr){ if(dateStr in cache) return cache[dateStr];
       const snap = await getDoc(streakRef(dateStr));
@@ -230,13 +232,16 @@
       document.getElementById('loadingOverlay').style.display='flex';
       const start=new Date(y,m-1,1);
       const end=new Date(y,m+2,0);
-      const streaksCol=collection(db, "streaks");
-      const q=query(streaksCol, where("ts", ">=", start.getTime()), where("ts", "<=", end.getTime()));
+      const streaksCol=collection(db, "users", userId, "streaks");
+      const q=query(
+        streaksCol,
+        where("ts", ">=", start.getTime()),
+        where("ts", "<=", end.getTime())
+      );
       const snaps=await getDocs(q);
       snaps.forEach(docSnap=>{
         if(docSnap.exists()){
-          const id=docSnap.id.split("_")[1];
-          cache[id]=true;
+          cache[docSnap.id] = true;
         }
       });
       render();
