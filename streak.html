@@ -143,7 +143,7 @@
       return {firstDayIndex:first.getDay(), days:last.getDate()}
     }
 
-    function streakRef(dateStr){ return doc(db, "users", userId, "streaks", dateStr); }
+    function streakRef(dateStr){ return doc(db, "streaks", `${userId}_${dateStr}`); }
 
     async function isDone(dateStr){ if(dateStr in cache) return cache[dateStr];
       const snap = await getDoc(streakRef(dateStr));
@@ -230,12 +230,13 @@
       document.getElementById('loadingOverlay').style.display='flex';
       const start=new Date(y,m-1,1);
       const end=new Date(y,m+2,0);
-      const streaksCol=collection(db, "users", userId, "streaks");
+      const streaksCol=collection(db, "streaks");
       const q=query(streaksCol, where("ts", ">=", start.getTime()), where("ts", "<=", end.getTime()));
       const snaps=await getDocs(q);
       snaps.forEach(docSnap=>{
         if(docSnap.exists()){
-          cache[docSnap.id]=true;
+          const id=docSnap.id.split("_")[1];
+          cache[id]=true;
         }
       });
       render();
@@ -258,6 +259,39 @@
     document.getElementById('prevMonth').addEventListener('click',()=>{const dt=new Date(viewYear,viewMonth-1,1); setView(dt.getFullYear(),dt.getMonth());});
     document.getElementById('nextMonth').addEventListener('click',()=>{const dt=new Date(viewYear,viewMonth+1,1); setView(dt.getFullYear(),dt.getMonth());});
     document.getElementById('todayBtn').addEventListener('click',()=>{const t=new Date(); setView(t.getFullYear(),t.getMonth());});
-    document.getElementById('clearBtn').addEventListener('click',async()=>{if(confirm('Clear all streaks?')){const streaksCol=collection(db, "users", userId, "streaks"); for(const k of Object.keys(cache)){if(cache[k]){await deleteDoc(doc(streaksCol, k)); cache[k]=false;}} render();}});
+    document.getElementById('clearBtn').addEventListener('click',async()=>{if(confirm('Clear all streaks?')){for(const k of Object.keys(cache)){if(cache[k]){await deleteDoc(streakRef(k)); cache[k]=false;}} render();}});
 
-    document.getElementById('logout
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      await signOut(auth);
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const email=document.getElementById('email').value;
+      const password=document.getElementById('password').value;
+      try{
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch(err){
+        alert("Login failed: "+err.message);
+        document.getElementById('password').focus();
+      }
+    });
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(user){
+        userId=user.uid;
+        document.getElementById('loginForm').style.display='none';
+        document.getElementById('logoutBtn').style.display='inline-block';
+        const t=new Date();
+        setView(t.getFullYear(), t.getMonth());
+      } else {
+        userId=null;
+        document.getElementById('loginForm').style.display='flex';
+        document.getElementById('logoutBtn').style.display='none';
+        document.getElementById('email').focus();
+      }
+    });
+  </script>
+</body>
+</html>
+
