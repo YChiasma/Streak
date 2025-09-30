@@ -71,6 +71,13 @@
       </div>
     </header>
 
+    <select id="streakSelect" class="btn">
+      <option value="default">Default</option>
+      <option value="Running">Running</option>
+      <option value="Meditation">Meditation</option>
+    </select>
+
+
     <div class="calendar-wrap">
       <div class="month-card" aria-live="polite">
         <div class="loading-overlay" id="loadingOverlay" style="display:none"><div class="spinner"></div></div>
@@ -144,7 +151,7 @@
     }
 
     function streakRef(dateStr) {
-      return doc(db, "users", userId, "streaks", dateStr);
+      return doc(db, "users", userId, "streaks", currentStreakName, dateStr);
     }
 
     async function isDone(dateStr){ if(dateStr in cache) return cache[dateStr];
@@ -232,7 +239,7 @@
       document.getElementById('loadingOverlay').style.display='flex';
       const start=new Date(y,m-1,1);
       const end=new Date(y,m+2,0);
-      const streaksCol=collection(db, "users", userId, "streaks");
+      const streaksCol = collection(db, "users", userId, "streaks", currentStreakName);
       const q=query(
         streaksCol,
         where("ts", ">=", start.getTime()),
@@ -296,6 +303,17 @@
         document.getElementById('email').focus();
       }
     });
+
+    let currentStreakName = "default"; // or "Running", "Meditation", etc.
+
+    document.getElementById('streakSelect').addEventListener('change', e => {
+      currentStreakName = e.target.value;
+      cache = {};
+      const t = new Date();
+      setView(t.getFullYear(), t.getMonth());
+    });
+
+    
   </script>
 </body>
 </html>
