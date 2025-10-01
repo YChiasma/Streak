@@ -151,7 +151,7 @@
     }
 
     function streakRef(dateStr) {
-      return doc(db, "users", userId, "streaks", currentStreakName, dateStr);
+      return doc(db, "users", userId, "streaks", currentStreakName, "days", dateStr);
     }
 
     async function isDone(dateStr){ if(dateStr in cache) return cache[dateStr];
@@ -239,7 +239,7 @@
       document.getElementById('loadingOverlay').style.display='flex';
       const start=new Date(y,m-1,1);
       const end=new Date(y,m+2,0);
-      const streaksCol = collection(db, "users", userId, "streaks", currentStreakName);
+      const streaksCol = collection(db, "users", userId, "streaks", currentStreakName, "days");
       const q=query(
         streaksCol,
         where("ts", ">=", start.getTime()),
