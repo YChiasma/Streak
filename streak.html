@@ -71,11 +71,14 @@
       </div>
     </header>
 
-    <select id="streakSelect" class="btn">
-      <option value="default">Default</option>
-      <option value="Running">Running</option>
-      <option value="Meditation">Meditation</option>
-    </select>
+    <div style="display:flex; gap:8px; align-items:center">
+      <select id="streakSelect" class="btn">
+        <option value="default">Default</option>
+        <option value="Running">Running</option>
+        <option value="Meditation">Meditation</option>
+      </select>
+      <button class="btn" id="newStreakBtn">+ Add Streak</button>
+</div>
 
 
     <div class="calendar-wrap">
@@ -313,7 +316,31 @@
       setView(t.getFullYear(), t.getMonth());
     });
 
-    
+    document.getElementById("newStreakBtn").addEventListener("click", async () => {
+      const name = prompt("Enter a name for your new streak:");
+      if (!name) return;
+
+      // sanitize (no slashes in Firestore IDs)
+      const safeName = name.trim().replace(/[.#$/[\]]/g, "_");
+      if (!safeName) return alert("Invalid streak name");
+
+      // add it to dropdown
+      const select = document.getElementById("streakSelect");
+      const opt = document.createElement("option");
+      opt.value = safeName;
+      opt.textContent = safeName;
+      select.appendChild(opt);
+
+      // switch to it
+      select.value = safeName;
+      currentStreakName = safeName;
+
+      // init cache + load view
+      cache = {};
+      const t = new Date();
+      setView(t.getFullYear(), t.getMonth());
+    });
+
   </script>
 </body>
 </html>
