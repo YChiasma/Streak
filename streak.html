@@ -341,6 +341,65 @@
       setView(t.getFullYear(), t.getMonth());
     });
 
+async function loadStreakList() {
+  const select = document.getElementById("streakSelect");
+  select.innerHTML = ""; // clear existing
+
+  const streaksCol = collection(db, "users", userId, "streaks");
+  const snaps = await getDocs(streaksCol);
+
+  if (snaps.empty) {
+    // create a default streak if none exist
+    await setDoc(doc(db, "users", userId, "streaks", "default"), {
+      createdAt: Date.now()
+    });
+    const opt = document.createElement("option");
+    opt.value = "default";
+    opt.textContent = "default";
+    select.appendChild(opt);
+    currentStreakName = "default";
+    return;
+  }
+
+  snaps.forEach(docSnap => {
+    const name = docSnap.id;
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+
+  // pick first streak as active
+  currentStreakName = select.options[0].value;
+  select.value = currentStreakName;
+}
+
+document.getElementById("newStreakBtn").addEventListener("click", async () => {
+  const name = prompt("Enter a name for your new streak:");
+  if (!name) return;
+
+  const safeName = name.trim().replace(/[.#$/[\]]/g, "_");
+  if (!safeName) return alert("Invalid streak name");
+
+  const streakDoc = doc(db, "users", userId, "streaks", safeName);
+  await setDoc(streakDoc, { createdAt: Date.now() });
+
+  // refresh list
+  await loadStreakList();
+
+  // select new streak
+  document.getElementById("streakSelect").value = safeName;
+  currentStreakName = safeName;
+  cache = {};
+  const t = new Date();
+  setView(t.getFullYear(), t.getMonth());
+});
+
+await loadStreakList();
+const t = new Date();
+setView(t.getFullYear(), t.getMonth());
+
+
   </script>
 </body>
 </html>
