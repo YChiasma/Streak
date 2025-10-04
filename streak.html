@@ -77,7 +77,11 @@
         <option value="Running">Running</option>
         <option value="Meditation">Meditation</option>
       </select>
+<label style="display:flex;align-items:center;gap:6px">
+  <input type="checkbox" id="publicToggle"> Public
+</label>
       <button class="btn" id="newStreakBtn">+ Add Streak</button>
+
 </div>
 
 
@@ -314,6 +318,9 @@
       cache = {};
       const t = new Date();
       setView(t.getFullYear(), t.getMonth());
+
+  // update checkbox
+  await syncPublicCheckbox(currentStreakName);
     });
 
     document.getElementById("newStreakBtn").addEventListener("click", async () => {
@@ -398,6 +405,30 @@ document.getElementById("newStreakBtn").addEventListener("click", async () => {
 await loadStreakList();
 const t = new Date();
 setView(t.getFullYear(), t.getMonth());
+
+async function togglePublic(streakName, value) {
+  const streakDoc = doc(db, "users", userId, "streaks", streakName);
+  await setDoc(streakDoc, { public: value }, { merge: true });
+}
+
+const publicToggle = document.getElementById("publicToggle");
+publicToggle.addEventListener("click", async () => { togglePublic(currentStreakName, publicToggle.checked) });
+
+async function syncPublicCheckbox(streakName) {
+  const checkbox = document.getElementById("publicToggle");
+  if (!streakName || !userId) return;
+
+  const streakDocRef = doc(db, "users", userId, "streaks", streakName);
+  const streakSnap = await getDoc(streakDocRef);
+
+  if (streakSnap.exists()) {
+    const data = streakSnap.data();
+    checkbox.checked = !!data.public;  // set checkbox state
+  } else {
+    checkbox.checked = false; // default to private if no doc
+  }
+}
+
 
 
   </script>
