@@ -315,7 +315,7 @@ await loadStreak(currentStreakName);
 
     let currentStreakName = "default"; // or "Running", "Meditation", etc.
 
-    document.getElementById('streakSelect').addEventListener('change', e => {
+    document.getElementById('streakSelect').addEventListener('change', async e => {
       currentStreakName = e.target.value;
       cache = {};
       const t = new Date();
