@@ -324,32 +324,7 @@ await loadStreak(currentStreakName);
   // update checkbox
   await syncPublicCheckbox(currentStreakName);
     });
-/*
-    document.getElementById("newStreakBtn").addEventListener("click", async () => {
-      const name = prompt("Enter a name for your new streak:");
-      if (!name) return;
 
-      // sanitize (no slashes in Firestore IDs)
-      const safeName = name.trim().replace(/[.#$/[\]]/g, "_");
-      if (!safeName) return alert("Invalid streak name");
-
-      // add it to dropdown
-      const select = document.getElementById("streakSelect");
-      const opt = document.createElement("option");
-      opt.value = safeName;
-      opt.textContent = safeName;
-      select.appendChild(opt);
-
-      // switch to it
-      select.value = safeName;
-      currentStreakName = safeName;
-
-      // init cache + load view
-      cache = {};
-      const t = new Date();
-      setView(t.getFullYear(), t.getMonth());
-    });
-*/
 async function loadStreakList() {
   const select = document.getElementById("streakSelect");
   select.innerHTML = ""; // clear existing
