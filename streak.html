@@ -329,6 +329,7 @@ async function loadStreakList() {
   const select = document.getElementById("streakSelect");
   select.innerHTML = ""; // clear existing
 
+  if(null === userId) return;
   const streaksCol = collection(db, "users", userId, "streaks");
   const snaps = await getDocs(streaksCol);
 
