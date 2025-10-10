@@ -80,6 +80,7 @@
 <label style="display:flex;align-items:center;gap:6px">
   <input type="checkbox" id="publicToggle"> Public
 </label>
+  <button id="shareLinkBtn" class="btn" style="display:none">Copy Share Link</button>
       <button class="btn" id="newStreakBtn">+ Add Streak</button>
 
 </div>
@@ -125,6 +126,10 @@
   </div>
 
   <script type="module">
+const urlParams = new URLSearchParams(window.location.search);
+const publicUser = urlParams.get("user");
+const publicStreak = urlParams.get("streak");
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
@@ -142,6 +147,35 @@
     let userId = null;
     let cache = {};
     let prevStats = {current:0,longest:0,total:0};
+
+if (publicUser && publicStreak) {
+  // Public view mode
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("logoutBtn").style.display = "none";
+  document.getElementById("clearBtn").style.display = "none";
+  document.getElementById("todayBtn").style.display = "none";
+  document.getElementById("publicToggle").disabled = true;
+  document.getElementById("shareLinkBtn").style.display = "none";
+
+  loadPublicStreak(publicUser, publicStreak);
+}
+
+async function loadPublicStreak(uid, streakName) {
+  const streakDocRef = doc(db, "users", uid, "streaks", streakName);
+  const streakSnap = await getDoc(streakDocRef);
+  if (!streakSnap.exists() || !streakSnap.data().public) {
+    alert("This streak is private or does not exist.");
+    return;
+  }
+
+  cache = {};
+  const daysCol = collection(db, "users", uid, "streaks", streakName, "days");
+  const snaps = await getDocs(daysCol);
+  snaps.forEach(docSnap => (cache[docSnap.id] = true));
+  const today = new Date();
+  setView(today.getFullYear(), today.getMonth());
+}
+
 
     function uidDate(d){
       const y=d.getFullYear(); const m=(d.getMonth()+1).toString().padStart(2,'0'); const day=d.getDate().toString().padStart(2,'0');
@@ -388,10 +422,27 @@ setView(t.getFullYear(), t.getMonth());
 async function togglePublic(streakName, value) {
   const streakDoc = doc(db, "users", userId, "streaks", streakName);
   await setDoc(streakDoc, { public: value }, { merge: true });
+
+
 }
 
 const publicToggle = document.getElementById("publicToggle");
-publicToggle.addEventListener("click", async () => { togglePublic(currentStreakName, publicToggle.checked) });
+publicToggle.addEventListener("click", async () => { 
+  togglePublic(currentStreakName, publicToggle.checked); 
+});
+
+publicToggle.addEventListener("change", async (e) => { 
+ // Toggle share link visibility
+  document.getElementById("shareLinkBtn").style.display = e.target.checked ? "inline-block" : "none";
+});
+
+document.getElementById("shareLinkBtn").addEventListener("click", async () => {
+  const link = `${window.location.origin}?user=${userId}&streak=${encodeURIComponent(currentStreakName)}`;
+  await navigator.clipboard.writeText(link);
+  alert("Share link copied to clipboard!");
+});
+
+
 
 async function syncPublicCheckbox(streakName) {
   const checkbox = document.getElementById("publicToggle");
@@ -423,6 +474,13 @@ async function loadStreak(streakName) {
   } else {
     checkbox.checked = false;
   }
+
+const shareBtn = document.getElementById("shareLinkBtn");
+if (checkbox.checked) {
+  shareBtn.style.display = "inline-block";
+} else {
+  shareBtn.style.display = "none";
+}
 
   // 🔹 Refresh the calendar
   const today = new Date();
