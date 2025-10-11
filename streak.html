@@ -150,6 +150,7 @@ const publicStreak = urlParams.get("streak");
 
 if (publicUser && publicStreak) {
   // Public view mode
+  console.log("Public mode");
   document.getElementById("loginForm").style.display = "none";
   document.getElementById("logoutBtn").style.display = "none";
   document.getElementById("clearBtn").style.display = "none";
@@ -332,6 +333,7 @@ async function loadPublicStreak(uid, streakName) {
 
     onAuthStateChanged(auth, async (user)=>{
       if(user){
+const loginFormDisplay = document.getElementById('loginForm').style.display;
         userId=user.uid;
         document.getElementById('loginForm').style.display='none';
         document.getElementById('logoutBtn').style.display='inline-block';
@@ -341,7 +343,7 @@ await loadStreakList();
 await loadStreak(currentStreakName);
       } else {
         userId=null;
-        document.getElementById('loginForm').style.display='flex';
+        document.getElementById('loginForm').style.display=loginFormDisplay;
         document.getElementById('logoutBtn').style.display='none';
         document.getElementById('email').focus();
       }
