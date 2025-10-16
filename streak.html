@@ -148,9 +148,12 @@ const publicStreak = urlParams.get("streak");
     let cache = {};
     let prevStats = {current:0,longest:0,total:0};
 
+let publicMode = false;
+
 if (publicUser && publicStreak) {
   // Public view mode
   console.log("Public mode");
+  publicMode = true;
   document.getElementById("loginForm").style.display = "none";
   document.getElementById("logoutBtn").style.display = "none";
   document.getElementById("clearBtn").style.display = "none";
@@ -225,7 +228,7 @@ async function loadPublicStreak(uid, streakName) {
     }
 
     async function render(){
-      if(!userId) return;
+      if(!userId && !publicMode) return;
       const daysGrid=document.getElementById('daysGrid');
       const {firstDayIndex, days}=getMonthInfo(viewYear, viewMonth);
       const monName=new Date(viewYear,viewMonth,1).toLocaleString(undefined,{month:'long',year:'numeric'});
@@ -277,7 +280,7 @@ async function loadPublicStreak(uid, streakName) {
     }
 
     async function loadMonthRange(y,m){
-      if(!userId) return;
+      if(!userId && !publicMode) return;
       document.getElementById('loadingOverlay').style.display='flex';
       const start=new Date(y,m-1,1);
       const end=new Date(y,m+2,0);
