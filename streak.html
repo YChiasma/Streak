@@ -288,7 +288,7 @@ async function loadPublicStreak(uid, streakName) {
       if(!publicMode)
         streaksCol = collection(db, "users", userId, "streaks", currentStreakName, "days");
       else
-        streaksCol = collection(db, "users", publicUser, "streaks", currentStreakName, "days");
+        streaksCol = collection(db, "users", publicUser, "streaks", publicStreak, "days");
       const q=query(
         streaksCol,
         where("ts", ">=", start.getTime()),
