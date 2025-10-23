@@ -28,7 +28,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAtlpMxWZ75kX_0c_SooL8lzeFXqOhAZgc",
@@ -38,6 +38,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+
+    // Ensure user stays logged in across tabs/pages
+    await setPersistence(auth, browserLocalPersistence);
 
     const params = new URLSearchParams(window.location.search);
     const profileUid = params.get("user");
@@ -87,9 +90,18 @@
     }
 
     onAuthStateChanged(auth, user => {
+      if(user) alert("Logged in!");
       currentUser = user;
-      const isOwner = user && user.uid === profileUid;
-      loadProfile(profileUid, isOwner);
+      if(null == user) return;
+      console.log(user);
+      if(null == profileUid) {
+        let isOwner = true;
+        loadProfile(user.uid, true);
+      }
+      else {console.log(typeof(profileUid));
+        let isOwner = user && user.uid === profileUid;
+        loadProfile(profileUid, isOwner);
+      }
       document.getElementById("profileTitle").textContent = isOwner ? "My Profile" : "User Profile";
     });
   </script>
