@@ -1,0 +1,33 @@
+name: Copy Streak to GitHub Pages Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone Streak repo
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          
+          git clone https://x-access-token:${{ secrets.GH_PAGES_TOKEN }}@github.com/YChiasma/Streak.git Streak
+
+      - name: Clone GitHub Pages repo
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          
+          git clone https://x-access-token:${{ secrets.GH_PAGES_TOKEN }}@github.com/YChiasma/YChiasma.github.io.git gh-pages
+          
+      - name: Copy Streak
+        run: |
+          cp -rf Streak gh-pages/Streak/
+          cd gh-pages
+          git add .
+          git commit -m "Update Streak from Streak repo [skip ci]" || echo "No changes to commit"
+          git push
