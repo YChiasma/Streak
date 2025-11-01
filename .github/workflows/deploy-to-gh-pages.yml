@@ -26,7 +26,7 @@ jobs:
           
       - name: Copy Streak
         run: |
-          rsync -av --exclude=".*" Streak gh-pages/Streak/
+          rsync -av --exclude=".*" Streak/ gh-pages/Streak/
           cd gh-pages
           git add .
           git commit -m "Update Streak from Streak repo [skip ci]" || echo "No changes to commit"
